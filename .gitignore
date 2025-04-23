@@ -1,3 +1,17 @@
 node_modules/
 target/
 project/target/
+
+.bloop/
+.direnv/
+.bsp/
+.metals/
+target/
+project/
+
+# from GitHub
+*.class
+*.log
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
