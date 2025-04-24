@@ -1,13 +1,13 @@
 node_modules/
 target/
 project/target/
+project/project/
 
 .bloop/
 .direnv/
 .bsp/
 .metals/
 target/
-project/
 
 # from GitHub
 *.class
