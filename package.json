@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "prepare": "sbt fastLinkJS",
+    "build-full": "sbt fullLinkJS && vite build"
   },
   "devDependencies": {
     "@scala-js/vite-plugin-scalajs": "^1.0.0",

@@ -1,6 +1,19 @@
-import { defineConfig } from "vite";
-import scalaJSPlugin from "@scala-js/vite-plugin-scalajs";
+import { defineConfig } from 'vite'
+import { resolve } from 'path'
 
 export default defineConfig({
-  plugins: [scalaJSPlugin()],
-});
+  root: 'vite',
+  publicDir: resolve(__dirname, 'public'),
+  server: {
+    port: 3000,
+  },
+  build: {
+    outDir: resolve(__dirname, 'dist'),
+    emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'public/index.html')
+      }
+    }
+  }
+})
