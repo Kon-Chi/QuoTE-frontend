@@ -10,9 +10,6 @@ object Main {
 
   val count: Var[Int] = Var(0)
 
-  // @js.native @JSImport("/vite.svg")
-  // val img: String = js.native;
-
   val doge: Node =
       <img style="width: 100px;" src="/vite.svg"/>
 
