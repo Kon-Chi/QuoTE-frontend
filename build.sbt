@@ -26,9 +26,9 @@ lazy val quote = project
     },
 
     // Output to Vite's expected directory
-    cleanFiles += baseDirectory.value / "vite" / "assets",
-    Compile / fastLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "vite" / "assets",
-    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "vite" / "assets",
+    cleanFiles += baseDirectory.value / "dist" / "assets",
+    Compile / fastLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "dist" / "assets",
+    Compile / fullLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "dist" / "assets",
 
     scalaJSLinkerConfig ~= { _.withESFeatures(_.withESVersion(ESVersion.ES2015)) },
 
