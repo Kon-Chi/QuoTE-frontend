@@ -29,9 +29,12 @@ object Main {
       </div>
     </div>
 
+  val editor =
+    <textarea class="mainTextArea"></textarea>
+
   def main(args: Array[String]): Unit = {
     val div = dom.document.getElementById("app")
-    mount(div, component)
+    mount(div, editor)
   }
 
 }
