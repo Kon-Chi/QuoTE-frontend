@@ -1,8 +1,11 @@
 import org.scalajs.linker.interface.ESVersion
 import org.scalajs.linker.interface.ModuleSplitStyle
 
+lazy val quote_ot = RootProject(uri("https://github.com/Kon-Chi/QuoTE-OT.git#4abe4ec7d24661180e9235d1585ebff0b60379e0"))
+
 lazy val quote = project
   .in(file("."))
+  .dependsOn(quote_ot)
   .enablePlugins(ScalaJSPlugin) // Enable the Scala.js plugin in this project
   .settings(
     scalaVersion := "3.3.5",
