@@ -10,49 +10,52 @@ object ClientState {
 }
 
 trait OTComposableOperation[Op] {
-  def compose(a: Op, b: Op): Either[String, Op]
-  def transform(a: Op, b: Op): Either[String, (Op, Op)]
+  def compose(a: Op, b: Op): Op
+  def transform(a: Op, b: Op): (Op, Op)
 }
 
-class OTClient[Op](implicit ot: OTComposableOperation[Op]) {
+class Client[Op](implicit ot: OTComposableOperation[Op]) {
   
-  def applyClient(state: ClientState[Op], op: Op): Either[String, (Boolean, ClientState[Op])] = {
+  def applyClient(state: ClientState[Op], op: Op): (Boolean, ClientState[Op]) = {
     state match {
       case ClientSynchronized => 
-        Right((true, ClientWaiting(op)))
+        (true, ClientWaiting(op))
         
       case ClientWaiting(w) => 
-        Right((false, ClientWaitingWithBuffer(w, op)))
+        (false, ClientWaitingWithBuffer(w, op))
         
       case ClientWaitingWithBuffer(w, b) =>
-        ot.compose(b, op).map(b1 => (false, ClientWaitingWithBuffer(w, b1)))
+        val b1 = ot.compose(b, op)
+        (false, ClientWaitingWithBuffer(w, b1))
     }
   }
   
-  def applyServer(state: ClientState[Op], serverOp: Op): Either[String, (Op, ClientState[Op])] = {
+  def applyServer(state: ClientState[Op], serverOp: Op): (Op, ClientState[Op]) = {
     state match {
       case ClientSynchronized => 
-        Right((serverOp, ClientSynchronized))
+        (serverOp, ClientSynchronized)
         
       case ClientWaiting(w) =>
-        ot.transform(w, serverOp).map { case (w1, serverOp1) => 
-          (serverOp1, ClientWaiting(w1))
-        }
+        val (w1, serverOp1) = ot.transform(w, serverOp)
+        (serverOp1, ClientWaiting(w1))
         
       case ClientWaitingWithBuffer(w, b) =>
-        ot.transform(w, serverOp).flatMap { case (w1, serverOp1) =>
-          ot.transform(b, serverOp1).map { case (b1, serverOp2) =>
-            (serverOp2, ClientWaitingWithBuffer(w1, b1))
-          }
-        }
+        val (w1, serverOp1) = ot.transform(w, serverOp)
+        val (b1, serverOp2) = ot.transform(b, serverOp1)
+        (serverOp2, ClientWaitingWithBuffer(w1, b1))
     }
   }
   
-  def serverAck(state: ClientState[Op]): Option[(Option[Op], ClientState[Op])] = {
+  def serverAck(state: ClientState[Op]): (Option[Op], ClientState[Op]) = {
     state match {
-      case ClientSynchronized => None
-      case ClientWaiting(_) => Some((None, ClientSynchronized))
-      case ClientWaitingWithBuffer(_, b) => Some((Some(b), ClientWaiting(b)))
+      case ClientSynchronized => 
+        (None, ClientSynchronized)
+        
+      case ClientWaiting(_) => 
+        (None, ClientSynchronized)
+        
+      case ClientWaitingWithBuffer(_, b) => 
+        (Some(b), ClientWaiting(b))
     }
   }
 }
