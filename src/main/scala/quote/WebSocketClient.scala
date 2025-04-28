@@ -1,111 +1,121 @@
+package quote.frontend
+
 import org.scalajs.dom
+import org.scalajs.dom.{WebSocket, Event, MessageEvent}
 import io.circe._
-import io.circe.generic.semiauto._
+import io.circe.parser._
 import io.circe.syntax._
-import scala.concurrent.Future
+import io.circe.generic.semiauto._
+
 import quote.ot.Operation
+import quote.Client
+import quote.ClientState
 
-object WebSocketClient {
-  implicit val operationCodec: Codec[Operation] = deriveCodec[Operation]
-  implicit val clientInputCodec: Codec[ClientInput] = deriveCodec[ClientInput]
-  implicit val serverUpdateCodec: Codec[ServerUpdate] = deriveCodec[ServerUpdate]
+case class ClientInput(
+  revision: Int,
+  operations: List[Operation]
+) derives Encoder.AsObject, Decoder
 
-  private var socket: Option[dom.WebSocket] = None
-  private var currentState: ClientState = ClientState.initial
+case class ServerUpdate(
+  revision: Int,
+  operations: List[Operation]
+) derives Encoder.AsObject, Decoder
+
+class WebSocketClient(documentId: String) {
+  private var ws: WebSocket = _
+  private var clientState: ClientState = ClientState.initial
   private var currentRevision: Int = 0
-
-  private var onUpdate: List[Operation] => Unit = _ => ()
-  private var onError: String => Unit = _ => ()
-
-  def connect(url: String): Future[Unit] = {
-    val promise = scala.concurrent.Promise[Unit]()
+  
+  private var onDocumentUpdate: String => Unit = _ => ()
+  private var onConnectionChange: Boolean => Unit = _ => ()
+  
+  def connect(): Unit = {
+    val wsUrl = s"ws://${dom.window.location.host}/updates?doc=$documentId"
+    ws = new WebSocket(wsUrl)
     
-    val ws = new dom.WebSocket(s"ws://${dom.window.location.host}/updates")
-    socket = Some(ws)
-
-    ws.onopen = { (_: dom.Event) =>
+    ws.onopen = (_: Event) => {
+      onConnectionChange(true)
       println("WebSocket connected")
-      promise.success(())
     }
-
-    ws.onerror = { (_: dom.Event) =>
-      val error = "WebSocket error"
-      println(error)
-      onError(error)
-      promise.failure(new Exception(error))
-    }
-
-    ws.onmessage = { (event: dom.MessageEvent) =>
-      event.data match {
-        case blob: dom.Blob =>
-          val reader = new dom.FileReader()
-          reader.onload = { (_) =>
-            handleMessage(reader.result.asInstanceOf[String])
-          }
-          reader.readAsText(blob)
-        case text: String =>
-          handleMessage(text)
-        case _ =>
-          onError("Unknown message format")
-      }
-    }
-
-    ws.onclose = { (_: dom.Event) =>
-      println("WebSocket closed")
-      socket = None
-    }
-
-    promise.future
-  }
-
-  private def handleMessage(message: String): Unit = {
-    parser.decode[ServerUpdate](message) match {
-      case Right(update) =>
-        currentRevision = update.revision
-        val (transformedOps, newState) = Client.applyServer(currentState, update.operations)
-        currentState = newState
-        onUpdate(transformedOps)
-        
-      case Left(error) =>
-        onError(s"Failed to parse server update: $error")
-    }
-  }
-
-  def sendOperations(operations: List[Operation]): Unit = {
-    operations.foreach { op =>
-      val (shouldSend, newState) = Client.applyClient(currentState, op)
-      currentState = newState
-      
-      if (shouldSend) {
-        val input = ClientInput(currentRevision, List(op))
-        socket.foreach(_.send(input.asJson.noSpaces))
-      }
-    }
-  }
-
-  def handleServerAck(): Unit = {
-    val (opsToSend, newState) = Client.serverAck(currentState)
-    currentState = newState
     
-    opsToSend.foreach { ops =>
-      val input = ClientInput(currentRevision, ops)
-      socket.foreach(_.send(input.asJson.noSpaces))
+    ws.onclose = (_: Event) => {
+      onConnectionChange(false)
+      println("WebSocket disconnected")
+    }
+    
+    ws.onerror = (_: Event) => {
+      println("WebSocket error")
+    }
+    
+    ws.onmessage = (event: MessageEvent) => {
+      val message = event.data.toString
+      parse(message).flatMap(_.as[ServerUpdate]) match {
+        case Right(serverUpdate) =>
+          handleServerUpdate(serverUpdate)
+        case Left(parsingError) =>
+          println(s"Failed to decode server message: $parsingError")
+      }
     }
   }
-
-  def setCallbacks(
-    updateHandler: List[Operation] => Unit,
-    errorHandler: String => Unit
-  ): Unit = {
-    onUpdate = updateHandler
-    onError = errorHandler
+  
+  def disconnect(): Unit = {
+    if (ws != null) {
+      ws.close()
+    }
   }
-
-  def close(): Unit = {
-    socket.foreach(_.close())
-    socket = None
+  
+  def setOnDocumentUpdate(callback: String => Unit): Unit = {
+    onDocumentUpdate = callback
+  }
+  
+  def setOnConnectionChange(callback: Boolean => Unit): Unit = {
+    onConnectionChange = callback
+  }
+  
+  def applyLocalOperation(op: Operation, currentDoc: String): String = {
+    val (shouldSend, newState) = Client.applyClient(clientState, op)
+    clientState = newState
+    
+    if (shouldSend) {
+      sendOperations(List(op))
+    }
+    
+    applyOperationToDoc(op, currentDoc)
+  }
+  
+  private def handleServerUpdate(update: ServerUpdate): Unit = {
+    val (transformedOps, newState) = 
+      Client.applyServer(clientState, update.operations)
+    clientState = newState
+    currentRevision = update.revision
+    
+    // Store current document state
+    var currentDoc = ""
+    
+    transformedOps.foreach { op =>
+      currentDoc = applyOperationToDoc(op, currentDoc)
+      onDocumentUpdate(currentDoc)
+    }
+    
+    val (maybeOps, ackState) = Client.serverAck(clientState)
+    clientState = ackState
+    
+    maybeOps.foreach { ops =>
+      sendOperations(ops)
+    }
+  }
+  
+  private def sendOperations(ops: List[Operation]): Unit = {
+    if (ws.readyState == WebSocket.OPEN) {
+      val input = ClientInput(currentRevision, ops)
+      ws.send(input.asJson.noSpaces)
+    }
+  }
+  
+  private def applyOperationToDoc(op: Operation, doc: String): String = {
+    // Implement operation application logic
+    op match {
+      case _ => doc
+    }
   }
 }
-
-case class ClientInput(revision: Int, operations: List[Operation])
-case class ServerUpdate(revision: Int, operations: List[Operation])
