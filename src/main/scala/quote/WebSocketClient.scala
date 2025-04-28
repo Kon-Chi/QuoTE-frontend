@@ -87,7 +87,6 @@ class WebSocketClient(documentId: String) {
     clientState = newState
     currentRevision = update.revision
     
-    // Store current document state
     var currentDoc = ""
     
     transformedOps.foreach { op =>
@@ -118,9 +117,9 @@ class WebSocketClient(documentId: String) {
         } else {
           doc
         }
-      case Delete(index, str) =>
+      case Delete(index, len) =>
         if (index >= 0 && index < doc.length) {
-          doc.take(index) + doc.drop(index + 1)
+          doc.take(index) + doc.drop(index + len)
         } else {
           doc
         }
