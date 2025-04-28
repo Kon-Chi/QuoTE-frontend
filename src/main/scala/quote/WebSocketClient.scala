@@ -3,11 +3,7 @@ import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import scala.concurrent.Future
-import scala.scalajs.js.typedarray._
-
-case class Operation(content: String) // Define actual Operation type
-case class ClientInput(revision: Int, operations: List[Operation])
-case class ServerUpdate(revision: Int, operations: List[Operation])
+import quote.ot.Operation
 
 object WebSocketClient {
   implicit val operationCodec: Codec[Operation] = deriveCodec[Operation]
@@ -27,23 +23,23 @@ object WebSocketClient {
     val ws = new dom.WebSocket(s"ws://${dom.window.location.host}/updates")
     socket = Some(ws)
 
-    ws.onopen = { _: dom.Event =>
+    ws.onopen = { (_: dom.Event) =>
       println("WebSocket connected")
       promise.success(())
     }
 
-    ws.onerror = { _: dom.Event =>
+    ws.onerror = { (_: dom.Event) =>
       val error = "WebSocket error"
       println(error)
       onError(error)
       promise.failure(new Exception(error))
     }
 
-    ws.onmessage = { event: dom.MessageEvent =>
+    ws.onmessage = { (event: dom.MessageEvent) =>
       event.data match {
         case blob: dom.Blob =>
           val reader = new dom.FileReader()
-          reader.onload = { _ =>
+          reader.onload = { (_) =>
             handleMessage(reader.result.asInstanceOf[String])
           }
           reader.readAsText(blob)
@@ -54,7 +50,7 @@ object WebSocketClient {
       }
     }
 
-    ws.onclose = { _: dom.Event =>
+    ws.onclose = { (_: dom.Event) =>
       println("WebSocket closed")
       socket = None
     }
@@ -76,12 +72,14 @@ object WebSocketClient {
   }
 
   def sendOperations(operations: List[Operation]): Unit = {
-    val (shouldSend, newState) = Client.applyClient(currentState, operations)
-    currentState = newState
-    
-    if (shouldSend) {
-      val input = ClientInput(currentRevision, operations)
-      socket.foreach(_.send(input.asJson.noSpaces))
+    operations.foreach { op =>
+      val (shouldSend, newState) = Client.applyClient(currentState, op)
+      currentState = newState
+      
+      if (shouldSend) {
+        val input = ClientInput(currentRevision, List(op))
+        socket.foreach(_.send(input.asJson.noSpaces))
+      }
     }
   }
 
@@ -108,3 +106,6 @@ object WebSocketClient {
     socket = None
   }
 }
+
+case class ClientInput(revision: Int, operations: List[Operation])
+case class ServerUpdate(revision: Int, operations: List[Operation])
