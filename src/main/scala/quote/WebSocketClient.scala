@@ -2,10 +2,10 @@ package quote
 
 import org.scalajs.dom
 import org.scalajs.dom.{WebSocket, Event, MessageEvent}
-import io.circe._
-import io.circe.parser._
-import io.circe.syntax._
-import io.circe.generic.semiauto._
+import io.circe.*
+import io.circe.parser.*
+import io.circe.syntax.*
+import io.circe.generic.semiauto.*
 
 import quote.ot.*
 

@@ -3,6 +3,8 @@ import org.scalajs.linker.interface.ModuleSplitStyle
 
 lazy val quote_ot = RootProject(uri("https://github.com/Kon-Chi/QuoTE-OT.git#ee4dce0c5afe7cf2d22f5692aa7a80439bc8a40d"))
 
+val circeVersion = "0.14.12"
+
 lazy val quote = project
   .in(file("."))
   .dependsOn(quote_ot)
@@ -41,5 +43,8 @@ lazy val quote = project
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "2.8.0",
       "in.nvilla" %%% "monadic-html" % "0.5.0-RC1",
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
     )
   )
