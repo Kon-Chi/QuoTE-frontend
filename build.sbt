@@ -1,7 +1,7 @@
 import org.scalajs.linker.interface.ESVersion
 import org.scalajs.linker.interface.ModuleSplitStyle
 
-lazy val quote_ot = RootProject(uri("https://github.com/Kon-Chi/QuoTE-OT.git#4abe4ec7d24661180e9235d1585ebff0b60379e0"))
+lazy val quote_ot = RootProject(uri("https://github.com/Kon-Chi/QuoTE-OT.git#ee4dce0c5afe7cf2d22f5692aa7a80439bc8a40d"))
 
 lazy val quote = project
   .in(file("."))

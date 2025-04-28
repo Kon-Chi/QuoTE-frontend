@@ -1,4 +1,5 @@
 import quote.ot.*
+import quote.ot.OperationalTransformation.transform
 
 sealed trait ClientState
 case object ClientSynchronized extends ClientState
@@ -50,25 +51,5 @@ object Client {
 
       case ClientWaitingWithBuffer(_, b) =>
         (Some(b), ClientWaiting(b))
-    }
-
-  val transform = transformList2
-
-  def transformList1(o: Operation, ps: List[Operation]): (Operation, List[Operation]) =
-    ps match {
-      case Nil => (o, Nil)
-      case p :: psTail =>
-        val (o1, p1) = OperationalTransformation.transform(o, p)
-        val (o2, ps1) = transformList1(o1, psTail)
-        (o2, p1 :: ps1)
-    }
-
-  def transformList2(os: List[Operation], ps: List[Operation]): (List[Operation], List[Operation]) =
-    os match {
-      case Nil => (Nil, ps)
-      case o :: osTail =>
-        val (o1,  ps1) = transformList1(o, ps)
-        val (os1, ps2) = transformList2(osTail, ps1)
-        (o1 :: os1, ps2)
     }
 }

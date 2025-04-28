@@ -22,7 +22,6 @@
 
             coursier
             zulu21 # needed for metals
-            vite
 
             sbt-with-scala-native
             nodejs_23
