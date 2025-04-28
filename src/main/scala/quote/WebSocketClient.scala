@@ -7,7 +7,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import io.circe.generic.semiauto._
 
-import quote.ot.Operation
+import quote.ot.*
 
 case class ClientInput(
   revision: Int,
@@ -111,9 +111,20 @@ class WebSocketClient(documentId: String) {
   }
   
   private def applyOperationToDoc(op: Operation, doc: String): String = {
-    // Implement operation application logic
     op match {
-      case _ => doc
+      case Insert(index, str) =>
+        if (index >= 0 && index <= doc.length) {
+          doc.take(index) + str + doc.drop(index)
+        } else {
+          doc
+        }
+      case Delete(index, str) =>
+        if (index >= 0 && index < doc.length) {
+          doc.take(index) + doc.drop(index + 1)
+        } else {
+          doc
+        }
+      case null => doc
     }
   }
 }
