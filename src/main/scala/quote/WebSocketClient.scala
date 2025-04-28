@@ -1,4 +1,4 @@
-package quote.frontend
+package quote
 
 import org.scalajs.dom
 import org.scalajs.dom.{WebSocket, Event, MessageEvent}
@@ -8,8 +8,6 @@ import io.circe.syntax._
 import io.circe.generic.semiauto._
 
 import quote.ot.Operation
-import quote.Client
-import quote.ClientState
 
 case class ClientInput(
   revision: Int,
