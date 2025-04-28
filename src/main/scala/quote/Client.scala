@@ -1,3 +1,5 @@
+package quote
+
 import quote.ot.*
 import quote.ot.OperationalTransformation.transform
 
