@@ -7,6 +7,8 @@ lazy val quote_ot = RootProject(
   )
 )
 
+val circeVersion = "0.14.12"
+
 lazy val quote = project
   .in(file("."))
   .dependsOn(quote_ot)
@@ -42,5 +44,8 @@ lazy val quote = project
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % "2.8.0",
       "in.nvilla" %%% "monadic-html" % "0.5.0-RC1",
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
     )
   )
