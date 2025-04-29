@@ -1,4 +1,4 @@
-package quote
+package quote.frontend
 
 import mhtml._
 import scala.xml.Node
@@ -7,7 +7,6 @@ import scala.scalajs.js
 import scala.scalajs.js.annotation._
 
 object Main {
-
   val count: Var[Int] = Var(0)
 
   val doge: Node =
@@ -29,12 +28,9 @@ object Main {
       </div>
     </div>
 
-  val editor =
-    <textarea class="mainTextArea"></textarea>
-
   def main(args: Array[String]): Unit = {
     val div = dom.document.getElementById("app")
-    mount(div, editor)
+    mount(div, TextArea.getMainComponent())
   }
 
 }

@@ -1,4 +1,4 @@
-package quote
+package quote.frontend
 
 import org.scalajs.dom
 import org.scalajs.dom.{WebSocket, Event, MessageEvent}

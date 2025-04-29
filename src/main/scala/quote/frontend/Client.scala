@@ -1,4 +1,4 @@
-package quote
+package quote.frontend
 
 import quote.ot.*
 import quote.ot.OperationalTransformation.transform
