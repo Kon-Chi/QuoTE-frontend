@@ -1,10 +1,10 @@
 package quote.frontend
 
-import mhtml._
+import mhtml.*
 import scala.xml.Node
 import org.scalajs.dom
 import scala.scalajs.js
-import scala.scalajs.js.annotation._
+import scala.scalajs.js.annotation.*
 
 object Main {
   val count: Var[Int] = Var(0)
