@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000 dist",
+    "dev": "npm run build && vite dev --port 3000 dist",
     "build": "vite build && mv dist/src/*.html dist",
     "prepare": "sbt fastLinkJS",
     "build-full": "sbt fullLinkJS && vite build"
