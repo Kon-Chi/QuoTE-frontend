@@ -2,6 +2,7 @@ node_modules/
 target/
 project/target/
 project/project/
+.idea
 
 .bloop/
 .direnv/
