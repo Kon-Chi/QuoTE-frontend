@@ -1,7 +1,11 @@
 import org.scalajs.linker.interface.ESVersion
 import org.scalajs.linker.interface.ModuleSplitStyle
 
-lazy val quote_ot = RootProject(uri("https://github.com/Kon-Chi/QuoTE-OT.git#ee4dce0c5afe7cf2d22f5692aa7a80439bc8a40d"))
+lazy val quote_ot = RootProject(
+  uri(
+    "https://github.com/Kon-Chi/QuoTE-OT.git#5fa6f47b5998a36ff77aa6ef494fe7b7c5e2159d"
+  )
+)
 
 lazy val quote = project
   .in(file("."))
@@ -22,9 +26,8 @@ lazy val quote = project
      */
     scalaJSLinkerConfig ~= {
       _.withModuleKind(ModuleKind.ESModule)
-        .withModuleSplitStyle(
-          ModuleSplitStyle.SmallModulesFor(List("livechart"))
-        )
+        .withModuleSplitStyle(ModuleSplitStyle.FewestModules)
+        .withESFeatures(_.withESVersion(ESVersion.ES2015))
         .withSourceMap(true)
     },
 
@@ -32,8 +35,6 @@ lazy val quote = project
     cleanFiles += baseDirectory.value / "dist" / "assets",
     Compile / fastLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "dist" / "assets",
     Compile / fullLinkJS / scalaJSLinkerOutputDirectory := baseDirectory.value / "dist" / "assets",
-
-    scalaJSLinkerConfig ~= { _.withESFeatures(_.withESVersion(ESVersion.ES2015)) },
 
     /* Depend on the scalajs-dom library.
      * It provides static types for the browser DOM APIs.
