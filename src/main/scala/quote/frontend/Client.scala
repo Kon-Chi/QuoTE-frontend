@@ -4,11 +4,12 @@ import quote.ot.*
 import quote.ot.OperationalTransformation.transform
 
 sealed trait ClientState
+
 case object ClientSynchronized extends ClientState
 case class ClientWaiting(ops: List[Operation]) extends ClientState
 case class ClientWaitingWithBuffer(
-  waitingOp: List[Operation],
-  bufferOp:  List[Operation]
+    waitingOp: List[Operation],
+    bufferOp: List[Operation]
 ) extends ClientState
 
 object ClientState {
@@ -16,19 +17,22 @@ object ClientState {
 }
 
 object Client {
-  def applyClient(state: ClientState, op: Operation): (Boolean, ClientState) =
+  def applyClient(state: ClientState, ops: List[Operation]): (Boolean, ClientState) =
     state match {
       case ClientSynchronized =>
-        (true, ClientWaiting(List(op)))
+        (true, ClientWaiting(ops))
 
       case ClientWaiting(w) =>
-        (false, ClientWaitingWithBuffer(w, List(op)))
+        (false, ClientWaitingWithBuffer(w, ops))
 
       case ClientWaitingWithBuffer(w, b) =>
-        (false, ClientWaitingWithBuffer(w, op :: b))
+        (false, ClientWaitingWithBuffer(w, ops ::: b))
     }
 
-  def applyServer(state: ClientState, serverOps: List[Operation]): (List[Operation], ClientState) =
+  def applyServer(
+      state: ClientState,
+      serverOps: List[Operation]
+  ): (List[Operation], ClientState) =
     state match {
       case ClientSynchronized =>
         (serverOps, ClientSynchronized)

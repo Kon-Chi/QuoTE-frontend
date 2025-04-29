@@ -5,32 +5,90 @@ import scala.xml.Node
 import org.scalajs.dom
 import scala.scalajs.js
 import scala.scalajs.js.annotation.*
+import io.circe.*
+import io.circe.syntax.*
+import io.circe.generic.semiauto.*
+import org.scalajs.dom.*
+import scala.collection.immutable.Queue
+
+import quote.ot.*
 
 object Main {
-  val count: Var[Int] = Var(0)
+  val wsClient = WebSocketClient("shareddocument")
+  var lastText: String = ""
+  val dmp = DiffMatchPatch()
+  val editor = TextArea("", onInput)
 
-  val doge: Node =
-      <img style="width: 100px;" src="/vite.svg"/>
+  def initWebSocket(): Unit = {
+    wsClient.connect()
 
-  val rxDoges: Rx[Seq[Node]] =
-    count.map(i => Seq.fill(i)(doge))
+    wsClient.setOnDocumentReceived { doc =>
+      lastText = doc
+      editor.text := doc
+      println(s"Received $doc")
+    }
 
-  val component = // ← look, you can even use fancy names!
-    <div class="p-4 bg-sky-100 space-y-4">
-      <button onclick={ () => count.update(_ + 1) }>Click Me!</button>
-      <div class="flex space-x-4 flex-wrap">
-        { count.map(i => if (i <= 0) <div></div> else <h2 class="text-gray-700">WOW!!!</h2>) }
-        { count.map(i => if (i <= 2) <div></div> else <h2 class="text-gray-700 font-bold">MUCH REACTIVE!!!</h2>) }
-        { count.map(i => if (i <= 5) <div></div> else <h2 class="text-gray-700 font-black">SUCH BINDING!!!</h2>) }
-      </div>
-      <div class="grid grid-cols-5 gap-2">
-      { rxDoges }
-      </div>
-    </div>
-
-  def main(args: Array[String]): Unit = {
-    val div = dom.document.getElementById("app")
-    mount(div, TextArea.getMainComponent())
+    wsClient.setOnDocumentUpdate { ops =>
+      editor.text.update(text => {
+        ops.foldLeft(text)((t, op) => applyOperation(op, t))
+      })
+      println("Updated")
+    }
   }
 
+  private def applyOperation(op: Operation, doc: String): String = {
+    op match {
+      case Insert(index, str) =>
+        if (0 <= index && index <= doc.length) {
+          doc.take(index) + str + doc.drop(index)
+        } else {
+          throw IndexOutOfBoundsException("Insertion into an invalid position")
+        }
+      case Delete(index, len) =>
+        if (0 <= index && index < doc.length) {
+          doc.take(index) + doc.drop(index + len)
+        } else {
+          throw IndexOutOfBoundsException("Deletion from an invalid position")
+        }
+      case null => doc
+    }
+  }
+
+  def handleUserAction(oldText: String, newText: String): Unit = {
+    println(s"$oldText -> $newText")
+    val ops = calculateTextDiff(oldText, newText)
+    ops.foreach(dom.console.log(_))
+    wsClient.sendLocalOperations(ops.toList)
+  }
+
+  def calculateTextDiff(
+      oldText: String,
+      newText: String
+  ): Queue[Operation] = {
+    val diffs = dmp.diff_main(lastText, newText)
+    dmp.diff_cleanupSemantic(diffs)
+
+    diffs.foldLeft((0, Queue[Operation]())) { (acc, diff) =>
+      var (pos, ops) = acc
+      val (opType, text) =
+        (diff(0).asInstanceOf[Int], diff(1).asInstanceOf[String])
+
+      if opType == 1 then ops = ops.appended(Insert(pos, text))
+      else if opType == -1 then
+        ops = ops.appended(Delete(pos, text.length))
+
+      (pos + text.length, ops)
+    }
+  }._2
+
+  def onInput(e: InputEvent): Unit =
+    val newText = e.target.asInstanceOf[html.TextArea].value
+    handleUserAction(lastText, newText)
+    lastText = newText
+
+  def main(args: Array[String]): Unit = {
+    initWebSocket()
+    val div = dom.document.getElementById("app")
+    mount(div, editor.component)
+  }
 }

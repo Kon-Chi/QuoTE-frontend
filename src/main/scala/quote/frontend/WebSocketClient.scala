@@ -10,120 +10,112 @@ import io.circe.generic.semiauto.*
 import quote.ot.*
 
 case class ClientInput(
-  revision: Int,
-  operations: List[Operation]
-) derives Encoder.AsObject, Decoder
+    revision: Int,
+    operations: List[Operation]
+) derives Codec.AsObject
 
 case class ServerUpdate(
-  revision: Int,
-  operations: List[Operation]
-) derives Encoder.AsObject, Decoder
+    revision: Int,
+    operations: List[Operation]
+) derives Codec.AsObject
 
 class WebSocketClient(documentId: String) {
+  private val wsHost: String = "127.0.0.1:8080"
+  private val wsUrl = s"ws://$wsHost/updates/$documentId"
+
   private var ws: WebSocket = _
+  private var documentReceived: Boolean = false
   private var clientState: ClientState = ClientState.initial
   private var currentRevision: Int = 0
-  
-  private var onDocumentUpdate: String => Unit = _ => ()
+
+  private var onDocumentReceived: String => Unit = _ => ()
+  private var onDocumentUpdate: List[Operation] => Unit = _ => ()
   private var onConnectionChange: Boolean => Unit = _ => ()
-  
+
   def connect(): Unit = {
-    val wsUrl = s"ws://${dom.window.location.host}/updates?doc=$documentId"
+    if ws != null then throw RuntimeException("The socket is already connected")
+
     ws = new WebSocket(wsUrl)
-    
+
     ws.onopen = (_: Event) => {
       onConnectionChange(true)
       println("WebSocket connected")
     }
-    
+
     ws.onclose = (_: Event) => {
       onConnectionChange(false)
       println("WebSocket disconnected")
     }
-    
+
     ws.onerror = (_: Event) => {
       println("WebSocket error")
     }
-    
+
     ws.onmessage = (event: MessageEvent) => {
       val message = event.data.toString
-      parse(message).flatMap(_.as[ServerUpdate]) match {
-        case Right(serverUpdate) =>
-          handleServerUpdate(serverUpdate)
-        case Left(parsingError) =>
-          println(s"Failed to decode server message: $parsingError")
-      }
+      if !documentReceived then
+        onDocumentReceived(message)
+        documentReceived = true
+      else
+        if message == "ack" then 
+          handleServerAck()
+          println("Acked")
+        else
+          parse(message).flatMap(_.as[ServerUpdate]) match {
+            case Right(serverUpdate) =>
+              handleServerUpdate(serverUpdate)
+            case Left(parsingError) =>
+              println(s"Failed to decode server message: $parsingError")
+          }
     }
   }
-  
+
   def disconnect(): Unit = {
     if (ws != null) {
       ws.close()
+      ws = null
     }
+    throw RuntimeException("The socket is already closed")
   }
-  
-  def setOnDocumentUpdate(callback: String => Unit): Unit = {
+
+  def setOnDocumentReceived(callback: String => Unit): Unit = {
+    onDocumentReceived = callback
+  }
+
+  def setOnDocumentUpdate(callback: List[Operation] => Unit): Unit = {
     onDocumentUpdate = callback
   }
-  
+
   def setOnConnectionChange(callback: Boolean => Unit): Unit = {
     onConnectionChange = callback
   }
-  
-  def applyLocalOperation(op: Operation, currentDoc: String): String = {
-    val (shouldSend, newState) = Client.applyClient(clientState, op)
+
+  def sendLocalOperations(ops: List[Operation]): Unit = {
+    val (shouldSend, newState) = Client.applyClient(clientState, ops)
     clientState = newState
-    
+
     if (shouldSend) {
-      sendOperations(List(op))
-    }
-    
-    applyOperationToDoc(op, currentDoc)
-  }
-  
-  private def handleServerUpdate(update: ServerUpdate): Unit = {
-    val (transformedOps, newState) = 
-      Client.applyServer(clientState, update.operations)
-    clientState = newState
-    currentRevision = update.revision
-    
-    var currentDoc = ""
-    
-    transformedOps.foreach { op =>
-      currentDoc = applyOperationToDoc(op, currentDoc)
-      onDocumentUpdate(currentDoc)
-    }
-    
-    val (maybeOps, ackState) = Client.serverAck(clientState)
-    clientState = ackState
-    
-    maybeOps.foreach { ops =>
       sendOperations(ops)
     }
   }
-  
+
+  private def handleServerAck(): Unit =
+    val (maybeOps, ackState) = Client.serverAck(clientState)
+    clientState = ackState
+    maybeOps.map(sendOperations(_))
+
+  private def handleServerUpdate(update: ServerUpdate): Unit = {
+    val (transformedOps, newState) =
+      Client.applyServer(clientState, update.operations)
+    clientState = newState
+    currentRevision = update.revision
+    onDocumentUpdate(transformedOps)
+  }
+
   private def sendOperations(ops: List[Operation]): Unit = {
     if (ws.readyState == WebSocket.OPEN) {
       val input = ClientInput(currentRevision, ops)
       ws.send(input.asJson.noSpaces)
-    }
-  }
-  
-  private def applyOperationToDoc(op: Operation, doc: String): String = {
-    op match {
-      case Insert(index, str) =>
-        if (index >= 0 && index <= doc.length) {
-          doc.take(index) + str + doc.drop(index)
-        } else {
-          doc
-        }
-      case Delete(index, len) =>
-        if (index >= 0 && index < doc.length) {
-          doc.take(index) + doc.drop(index + len)
-        } else {
-          doc
-        }
-      case null => doc
     }
   }
 }
