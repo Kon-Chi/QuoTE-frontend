@@ -2,47 +2,31 @@ package quote.frontend
 
 import quote.ot.*
 
-type Storage = List[(Operation, Unit => Operation)]
+type Storage = List[Unit => Operation]
 
 object OperationHistory:
   private var doneOperations: Storage = Nil
   private var doneUndoOperations: Storage = Nil
 
-  private def storeOperation(op: Operation, inverseOp: Unit => Operation, storage: Storage): Storage =
-    (op, inverseOp) :: storage
+  private def storeOperation(inverseOp: Unit => Operation, storage: Storage): Storage =
+    inverseOp :: storage
 
-  def putInsertOp(op: Insert): Unit =
-    doneOperations = storeOperation(op, _ => getInverseFromInsert(op), doneOperations)
+  def putOp(op: Operation): Unit =
+    doneOperations = storeOperation(_ => getInverse(op), doneOperations)
 
-  def putDeleteOp(op: Delete): Unit =
-    doneOperations = storeOperation(op, _ => getInverseFromDelete(op), doneOperations)
-
-  def putUndoInsertOp(op: Insert): Unit =
-    doneUndoOperations = storeOperation(op, _ => getInverseFromInsert(op), doneUndoOperations)
-
-  def putUndoDeleteOp(op: Delete): Unit =
-    doneUndoOperations = storeOperation(op, _ => getInverseFromDelete(op), doneUndoOperations)
+  def putUndoOp(op: Operation): Unit =
+    doneUndoOperations = storeOperation(_ => getInverse(op), doneUndoOperations)
 
   def revertOp: Operation =
-    val (_, undo) = doneOperations.head
-    doneOperations = doneUndoOperations.drop(1)
-    undo(()) match
-      case undo @ Insert(_, _) => undo
-      case undo @ Delete(_, _) => undo
-
+    val undo = doneOperations.head
+    doneOperations = doneOperations.drop(1)
+    undo(())
 
   def revertUndoOp: Operation =
-    val (_, redu) = doneUndoOperations.head
+    val redu = doneUndoOperations.head
     doneUndoOperations = doneUndoOperations.drop(1)
-    redu(()) match
-      case undo @ Insert(_, _) => undo
-      case undo @ Delete(_, _) => undo
+    redu(())
 
-
-def getInverseFromInsert(op: Insert): Delete =
-  op match
-    case Insert(ind, str) => Delete(ind, str)
-
-def getInverseFromDelete(op: Delete): Insert =
-  op match
-    case Delete(ind, s) => Insert(ind, s)
+def getInverse(op: Operation): Operation = op match
+  case Insert(ind, str) => Delete(ind, str)
+  case Delete(ind, str) => Insert(ind, str)
