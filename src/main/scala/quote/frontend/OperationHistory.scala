@@ -2,28 +2,28 @@ package quote.frontend
 
 import quote.ot.*
 
-type Storage = List[(Operation, Unit => Operation)]
+type Storage = List[Unit => Operation]
 
 object OperationHistory:
   private var doneOperations: Storage = Nil
   private var doneUndoOperations: Storage = Nil
 
-  private def storeOperation(op: Operation, inverseOp: Unit => Operation, storage: Storage): Storage =
-    (op, inverseOp) :: storage
+  private def storeOperation(inverseOp: Unit => Operation, storage: Storage): Storage =
+    inverseOp :: storage
 
   def putOp(op: Operation): Unit =
-    doneOperations = storeOperation(op, _ => getInverse(op), doneOperations)
+    doneOperations = storeOperation(_ => getInverse(op), doneOperations)
 
   def putUndoOp(op: Operation): Unit =
-    doneUndoOperations = storeOperation(op, _ => getInverse(op), doneUndoOperations)
+    doneUndoOperations = storeOperation(_ => getInverse(op), doneUndoOperations)
 
   def revertOp: Operation =
-    val (_, undo) = doneOperations.head
+    val undo = doneOperations.head
     doneOperations = doneOperations.drop(1)
     undo(())
 
   def revertUndoOp: Operation =
-    val (_, redu) = doneUndoOperations.head
+    val redu = doneUndoOperations.head
     doneUndoOperations = doneUndoOperations.drop(1)
     redu(())
 
