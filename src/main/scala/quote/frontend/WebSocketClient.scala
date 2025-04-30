@@ -123,6 +123,7 @@ class WebSocketClient() {
   private def handleServerAck(): Unit =
     val (maybeOps, ackState) = Client.serverAck(clientState)
     clientState = ackState
+    currentRevision += 1
     maybeOps.map(ops => {
       sendOperations(ops)
       ops.foreach(_ match
@@ -130,7 +131,6 @@ class WebSocketClient() {
         case d @ Delete(_, _) => OperationHistory.putDeleteOp(d)
       )
     })
-    currentRevision += 1
     onServerAck()
 
   private def handleServerUpdate(update: ServerUpdate): Unit = {
