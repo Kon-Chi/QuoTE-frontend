@@ -34,3 +34,4 @@ class TextArea(initalText: String, onInput: InputEvent => Unit) {
 
   def component = <textarea id="editor" stub={updText} stub2={updCursor} class="mainTextArea" oninput={onInput} onselectionchange={onCursorMove}></textarea>
 }
+

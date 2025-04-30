@@ -19,6 +19,8 @@ object Main {
   val dmp = DiffMatchPatch()
   var lastText: String = ""
   val editor = TextArea("", onInput)
+  val undoButton = UndoButton(onUndo)
+  val redoButton = RedoButton(onRedo)
 
   def updateText(s: String) =
     lastText = s
@@ -118,9 +120,23 @@ object Main {
     handleUserAction(lastText, newText)
     updateText(newText)
 
+  def onUndo(e: Event): Unit =
+    val op = OperationHistory.revertOp
+    val newText = applyOperation(op, lastText)
+    wsClient.sendLocalUndo(List(op))
+    updateText(newText)
+
+  def onRedo(e: Event): Unit =
+    val op = OperationHistory.revertUndoOp
+    val newText = applyOperation(op, lastText)
+    wsClient.sendLocalOperations(List(op))
+    updateText(newText)
+
   def main(args: Array[String]): Unit = {
     initWebSocket()
     val div = dom.document.getElementById("app")
     mount(div, editor.component)
+    mount(div, undoButton.component)
+    mount(div, redoButton.component)
   }
 }
