@@ -104,6 +104,13 @@ object Main {
   def main(args: Array[String]): Unit = {
     initWebSocket()
     val div = dom.document.getElementById("app")
-    mount(div, editor.component)
+
+    val appContent = 
+      <div class="app-container">
+        {Logo.component}
+        {editor.component}
+      </div>
+
+    mount(div, appContent)
   }
 }
