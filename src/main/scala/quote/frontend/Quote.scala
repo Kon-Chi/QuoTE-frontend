@@ -54,9 +54,9 @@ object Main {
         } else {
           throw IndexOutOfBoundsException("Insertion into an invalid position")
         }
-      case Delete(index, len) =>
+      case Delete(index, s) =>
         if (0 <= index && index < doc.length) {
-          doc.take(index) + doc.drop(index + len)
+          doc.take(index) + doc.drop(index + s.length)
         } else {
           throw IndexOutOfBoundsException("Deletion from an invalid position")
         }
@@ -85,7 +85,7 @@ object Main {
 
       if opType == 1 then ops = ops.appended(Insert(pos, text))
       else if opType == -1 then
-        ops = ops.appended(Delete(pos, text.length))
+        ops = ops.appended(Delete(pos, text))
 
       (pos + text.length, ops)
     }

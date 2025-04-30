@@ -109,7 +109,7 @@ class WebSocketClient(documentId: String) {
     if (shouldSend) {
       ops.foreach(_ match
         case i @ Insert(_, _) => OperationHistory.putInsertOp(i)
-        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d, "")
+        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d)
       )
       sendOperations(ops)
     }
@@ -122,7 +122,7 @@ class WebSocketClient(documentId: String) {
       sendOperations(ops)
       ops.foreach(_ match
         case i @ Insert(_, _) => OperationHistory.putInsertOp(i)
-        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d, "")
+        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d)
       )
     })
     currentRevision += 1

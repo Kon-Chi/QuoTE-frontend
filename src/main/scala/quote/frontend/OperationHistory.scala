@@ -14,14 +14,14 @@ object OperationHistory:
   def putInsertOp(op: Insert): Unit =
     doneOperations = storeOperation(op, _ => getInverseFromInsert(op), doneOperations)
 
-  def putDeleteOp(op: Delete, context: String): Unit =
-    doneOperations = storeOperation(op, _ => getInverseFromDelete(op, context), doneOperations)
+  def putDeleteOp(op: Delete): Unit =
+    doneOperations = storeOperation(op, _ => getInverseFromDelete(op), doneOperations)
 
   def putUndoInsertOp(op: Insert): Unit =
     doneUndoOperations = storeOperation(op, _ => getInverseFromInsert(op), doneUndoOperations)
 
-  def putUndoDeleteOp(op: Delete, context: String): Unit =
-    doneUndoOperations = storeOperation(op, _ => getInverseFromDelete(op, context), doneUndoOperations)
+  def putUndoDeleteOp(op: Delete): Unit =
+    doneUndoOperations = storeOperation(op, _ => getInverseFromDelete(op), doneUndoOperations)
 
   def revertOp: Operation =
     val (_, undo) = doneOperations.head
@@ -41,8 +41,8 @@ object OperationHistory:
 
 def getInverseFromInsert(op: Insert): Delete =
   op match
-    case Insert(ind, str) => Delete(ind, str.length)
+    case Insert(ind, str) => Delete(ind, str)
 
-def getInverseFromDelete(op: Delete, context: String): Insert =
+def getInverseFromDelete(op: Delete): Insert =
   op match
-    case Delete(ind, len) => Insert(ind, context.substring(ind, ind + len))
+    case Delete(ind, s) => Insert(ind, s)
