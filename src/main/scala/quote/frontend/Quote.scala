@@ -12,11 +12,12 @@ import org.scalajs.dom.*
 import scala.collection.immutable.Queue
 
 import quote.ot.*
+import scala.languageFeature.postfixOps
 
 object Main {
   val wsClient = WebSocketClient()
-  var lastText: String = ""
   val dmp = DiffMatchPatch()
+  var lastText: String = ""
   val editor = TextArea("", onInput)
 
   def updateText(s: String) =
@@ -28,26 +29,38 @@ object Main {
     wsClient.connect()
 
     wsClient.setOnDocumentReceived { doc =>
-      lastText = doc
-      editor.text := doc
+      updateText(doc)
+      editor.selection := (doc.length, doc.length)
       println(s"Received $doc")
     }
 
     wsClient.setOnDocumentUpdate { ops =>
       try
-        var s = ""
-        editor.text.update(text => {
-          val newText = ops.foldLeft(text)((t, op) => applyOperation(op, t))
-          updateText(newText)
-          s = newText
-          newText
+        editor.selection.update(sel => {
+          var (selStart, selEnd) = sel
+          editor.text.update(text => {
+            def updateCursor(pos: Int, op: Operation): Int =
+              op match
+                case Insert(ipos, s) => if pos <= ipos then pos else pos + s.length
+                case Delete(dpos, s) => if pos <= dpos then pos else pos - (math.min(pos, dpos + s.length) - dpos)
+            val newText = ops.foldLeft(text)((t, op) => {
+              selStart = updateCursor(selStart, op)
+              selEnd = updateCursor(selEnd, op)
+              applyOperation(op, t)
+            })
+            updateText(newText)
+            newText
+          })
+          (selStart, selEnd)
         })
-        println(s"Updated -> $s")
-      catch case e: IndexOutOfBoundsException => {
-        println(s"Index exception ${e.toString()}")
-        wsClient.disconnect()
-        initWebSocket()
-      }
+      catch
+        case e: IndexOutOfBoundsException => {
+          println(s"Index exception ${e.toString()}")
+          try
+            wsClient.disconnect()
+          finally
+            initWebSocket()
+        }
     }
   }
 
@@ -58,13 +71,17 @@ object Main {
         if (0 <= index && index <= doc.length) {
           doc.take(index) + str + doc.drop(index)
         } else {
-          throw IndexOutOfBoundsException(s"Insertion into an invalid position $index")
+          throw IndexOutOfBoundsException(
+            s"Insertion into an invalid position $index"
+          )
         }
       case Delete(index, s) =>
         if (0 <= index && index < doc.length) {
           doc.take(index) + doc.drop(index + s.length)
         } else {
-          throw IndexOutOfBoundsException(s"Deletion from an invalid position $index")
+          throw IndexOutOfBoundsException(
+            s"Deletion from an invalid position $index"
+          )
         }
       case null => doc
     }
