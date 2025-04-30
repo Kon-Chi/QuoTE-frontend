@@ -64,6 +64,11 @@ object Main {
             initWebSocket()
         }
     }
+
+    wsClient.onConnectionChange(status => {
+      if !status then
+        initWebSocket()
+    })
   }
 
   private def applyOperation(op: Operation, doc: String): String = {
