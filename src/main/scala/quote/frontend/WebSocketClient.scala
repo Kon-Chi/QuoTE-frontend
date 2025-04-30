@@ -9,15 +9,17 @@ import io.circe.generic.semiauto.*
 
 import quote.ot.*
 
+case class ServerInitialMessage(
+    revision: Int,
+    text: String
+) derives Codec.AsObject
+
 case class ClientInput(
     revision: Int,
     operations: List[Operation]
 ) derives Codec.AsObject
 
-case class ServerUpdate(
-    revision: Int,
-    operations: List[Operation]
-) derives Codec.AsObject
+type ServerUpdate = List[Operation]
 
 class WebSocketClient(documentId: String) {
   private val wsHost: String = "127.0.0.1:8080"
@@ -30,6 +32,7 @@ class WebSocketClient(documentId: String) {
 
   private var onDocumentReceived: String => Unit = _ => ()
   private var onDocumentUpdate: List[Operation] => Unit = _ => ()
+  private var onServerAck: () => Unit = () => ()
   private var onConnectionChange: Boolean => Unit = _ => ()
 
   def connect(): Unit = {
@@ -54,19 +57,24 @@ class WebSocketClient(documentId: String) {
     ws.onmessage = (event: MessageEvent) => {
       val message = event.data.toString
       if !documentReceived then
-        onDocumentReceived(message)
-        documentReceived = true
+        parse(message).flatMap(_.as[ServerInitialMessage]) match {
+          case Right(init) =>
+            onDocumentReceived(init.text)
+            currentRevision = init.revision
+            documentReceived = true
+          case Left(parsingError) =>
+            println(s"Failed to decode server message: $parsingError")
+        }
+      else if message == "ack" then
+        handleServerAck()
+        println("Acked")
       else
-        if message == "ack" then 
-          handleServerAck()
-          println("Acked")
-        else
-          parse(message).flatMap(_.as[ServerUpdate]) match {
-            case Right(serverUpdate) =>
-              handleServerUpdate(serverUpdate)
-            case Left(parsingError) =>
-              println(s"Failed to decode server message: $parsingError")
-          }
+        parse(message).flatMap(_.as[ServerUpdate]) match {
+          case Right(serverUpdate) =>
+            handleServerUpdate(serverUpdate)
+          case Left(parsingError) =>
+            println(s"Failed to decode server message: $parsingError")
+        }
     }
   }
 
@@ -86,6 +94,10 @@ class WebSocketClient(documentId: String) {
     onDocumentUpdate = callback
   }
 
+  def setOnServerAck(callback: () => Unit): Unit = {
+    onServerAck = callback
+  }
+
   def setOnConnectionChange(callback: Boolean => Unit): Unit = {
     onConnectionChange = callback
   }
@@ -95,6 +107,10 @@ class WebSocketClient(documentId: String) {
     clientState = newState
 
     if (shouldSend) {
+      ops.foreach(_ match
+        case i @ Insert(_, _) => OperationHistory.putInsertOp(i)
+        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d, "")
+      )
       sendOperations(ops)
     }
   }
@@ -102,13 +118,22 @@ class WebSocketClient(documentId: String) {
   private def handleServerAck(): Unit =
     val (maybeOps, ackState) = Client.serverAck(clientState)
     clientState = ackState
-    maybeOps.map(sendOperations(_))
+    maybeOps.map(ops => {
+      sendOperations(ops)
+      ops.foreach(_ match
+        case i @ Insert(_, _) => OperationHistory.putInsertOp(i)
+        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d, "")
+      )
+    })
+    currentRevision += 1
+    onServerAck()
 
   private def handleServerUpdate(update: ServerUpdate): Unit = {
     val (transformedOps, newState) =
-      Client.applyServer(clientState, update.operations)
+      Client.applyServer(clientState, update)
     clientState = newState
-    currentRevision = update.revision
+    currentRevision += 1
+    // currentRevision = update.revision
     onDocumentUpdate(transformedOps)
   }
 

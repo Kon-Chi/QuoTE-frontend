@@ -19,6 +19,11 @@ object Main {
   val dmp = DiffMatchPatch()
   val editor = TextArea("", onInput)
 
+  def updateText(s: String) =
+    lastText = s
+    editor.text := s
+    println(s"UPDT: $s")
+
   def initWebSocket(): Unit = {
     wsClient.connect()
 
@@ -29,14 +34,19 @@ object Main {
     }
 
     wsClient.setOnDocumentUpdate { ops =>
+      var s = ""
       editor.text.update(text => {
-        ops.foldLeft(text)((t, op) => applyOperation(op, t))
+        val newText = ops.foldLeft(text)((t, op) => applyOperation(op, t))
+        updateText(newText)
+        s = newText
+        newText
       })
-      println("Updated")
+      println(s"Updated -> $s")
     }
   }
 
   private def applyOperation(op: Operation, doc: String): String = {
+    println(s"!!!${doc.length} $doc")
     op match {
       case Insert(index, str) =>
         if (0 <= index && index <= doc.length) {
@@ -84,7 +94,7 @@ object Main {
   def onInput(e: InputEvent): Unit =
     val newText = e.target.asInstanceOf[html.TextArea].value
     handleUserAction(lastText, newText)
-    lastText = newText
+    updateText(newText)
 
   def main(args: Array[String]): Unit = {
     initWebSocket()

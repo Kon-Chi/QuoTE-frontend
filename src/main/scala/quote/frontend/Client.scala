@@ -26,7 +26,7 @@ object Client {
         (false, ClientWaitingWithBuffer(w, ops))
 
       case ClientWaitingWithBuffer(w, b) =>
-        (false, ClientWaitingWithBuffer(w, ops ::: b))
+        (false, ClientWaitingWithBuffer(w, ops.reverse ::: b))
     }
 
   def applyServer(
@@ -56,6 +56,6 @@ object Client {
         (None, ClientSynchronized)
 
       case ClientWaitingWithBuffer(_, b) =>
-        (Some(b), ClientWaiting(b))
+        (Some(b.reverse), ClientWaiting(b))
     }
 }
