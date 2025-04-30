@@ -112,10 +112,26 @@ class WebSocketClient() {
     clientState = newState
 
     if (shouldSend) {
-      ops.foreach(_ match
-        case i @ Insert(_, _) => OperationHistory.putInsertOp(i)
-        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d)
-      )
+      ops.foreach(OperationHistory.putOp)
+      sendOperations(ops)
+    }
+  }
+
+  def sendLocalUndo(ops: List[Operation]): Unit = {
+    val (shouldSend, newState) = Client.applyClient(clientState, ops)
+    clientState = newState
+
+    if (shouldSend) {
+      ops.foreach(OperationHistory.putUndoOp)
+      sendOperations(ops)
+    }
+  }
+
+  def sendLocalRedo(ops: List[Operation]): Unit = {
+    val (shouldSend, newState) = Client.applyClient(clientState, ops)
+    clientState = newState
+
+    if (shouldSend) {
       sendOperations(ops)
     }
   }
@@ -126,10 +142,7 @@ class WebSocketClient() {
     currentRevision += 1
     maybeOps.map(ops => {
       sendOperations(ops)
-      ops.foreach(_ match
-        case i @ Insert(_, _) => OperationHistory.putInsertOp(i)
-        case d @ Delete(_, _) => OperationHistory.putDeleteOp(d)
-      )
+      ops.foreach(OperationHistory.putOp)
     })
     onServerAck()
 

@@ -17,3 +17,4 @@ class TextArea(initalText: String, onInput: InputEvent => Unit) {
 
   def component = <textarea id="editor" stub={upd} class="mainTextArea" oninput={onInput}></textarea>
 }
+
