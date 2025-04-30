@@ -65,7 +65,7 @@ object Main {
         }
     }
 
-    wsClient.onConnectionChange(status => {
+    wsClient.setOnConnectionChange(status => {
       if !status then
         initWebSocket()
     })
