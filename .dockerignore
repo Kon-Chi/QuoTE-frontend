@@ -1,0 +1,6 @@
+.git
+.envrc
+.scalafmt.conf
+Dockerfile
+flake.*
+README.md
