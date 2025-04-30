@@ -14,7 +14,7 @@ import scala.collection.immutable.Queue
 import quote.ot.*
 
 object Main {
-  val wsClient = WebSocketClient("shareddocument")
+  val wsClient = WebSocketClient()
   var lastText: String = ""
   val dmp = DiffMatchPatch()
   val editor = TextArea("", onInput)

@@ -21,7 +21,12 @@ case class ClientInput(
 
 type ServerUpdate = List[Operation]
 
-class WebSocketClient(documentId: String) {
+class WebSocketClient() {
+  private val documentId: String = {
+    val path = dom.window.location.pathname
+    path.split('/').filter(_.nonEmpty).lastOption.getOrElse("default")
+  }
+
   private val wsHost: String = "127.0.0.1:8080"
   private val wsUrl = s"ws://$wsHost/updates/$documentId"
 
