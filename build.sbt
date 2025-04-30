@@ -3,7 +3,7 @@ import org.scalajs.linker.interface.ModuleSplitStyle
 
 lazy val quote_ot = RootProject(
   uri(
-    "https://github.com/Kon-Chi/QuoTE-OT.git#5fa6f47b5998a36ff77aa6ef494fe7b7c5e2159d"
+    "https://github.com/Kon-Chi/QuoTE-OT.git#88d6146a28b29a2371efdc909e91f3011dae27a7"
   )
 )
 
