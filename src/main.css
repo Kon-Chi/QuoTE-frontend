@@ -1,8 +1,19 @@
-.mainTextArea {
-    width: 100%;
-    height: 50vh;
-    padding: 1em;
-    box-sizing: border-box;
+:root {
+  --font-family: 'Arial', sans-serif;
+  --font-size-medium: 1rem;
+  --font-size-large: 1.5rem;
+  --font-weight-bold: bold;
+  --color-dark: #333;
+  --color-medium: #666;
+  --color-light: #f8f8f8;
+  --color-border: #ccc;
+  --border-radius: 4px;
+  --transition: 0.2s ease;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--color-dark);
 }
 
 .logo-container {
@@ -11,36 +22,56 @@
   gap: 10px;
   margin-bottom: 20px;
   padding: 10px;
-  background: #f8f8f8;
-  border-radius: 4px;
-  font-family: 'Arial', sans-serif;
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
+  background: var(--color-light);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-bold);
 }
-  
+
 .logo-image {
   width: 64px;
   height: 64px;
   object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+}
+
+.mainTextArea {
+  width: 100%;
+  height: 50vh;
+  padding: 1em;
+  box-sizing: border-box;
+  font-family: var(--font-family);
+  font-size: var(--font-size-medium);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  background: white;
 }
 
 .doButton {
-    padding: 0.5em 1em;
-    font-size: 0.8rem;
-    font-family: 'Arial', sans-serif;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    background-color: #f8f8f8;
-    cursor: pointer;
-    margin: 0.2em;
-    transition: background-color 0.2s ease;
+  padding: 0.5em 1em;
+  font-size: var(--font-size-medium);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-bold);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-light);
+  color: var(--color-dark);
+  cursor: pointer;
+  margin: 0.2em;
+  transition: background-color var(--transition);
 }
 
 .doButton:hover {
-    background-color: #e8e8e8;
+  background-color: #e8e8e8;
 }
 
 .doButton:active {
-    background-color: #ddd;
+  background-color: #ddd;
+}
+
+.logo-container,
+.mainTextArea,
+.doButton {
+  transition: all var(--transition);
 }
