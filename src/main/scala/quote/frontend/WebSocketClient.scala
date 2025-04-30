@@ -27,7 +27,8 @@ class WebSocketClient() {
     path.split('/').filter(_.nonEmpty).lastOption.getOrElse("default")
   }
 
-  private val wsHost: String = "127.0.0.1:8080"
+  // works from UniversityStudent
+  private val wsHost: String = "10.90.137.177:80"
   private val wsUrl = s"ws://$wsHost/updates/$documentId"
 
   private var ws: WebSocket = _

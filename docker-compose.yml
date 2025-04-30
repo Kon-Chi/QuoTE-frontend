@@ -4,3 +4,4 @@ services:
     build: .
     ports:
       - "${APP_PORT:-80}:80"
+    network_mode: host
