@@ -34,14 +34,20 @@ object Main {
     }
 
     wsClient.setOnDocumentUpdate { ops =>
-      var s = ""
-      editor.text.update(text => {
-        val newText = ops.foldLeft(text)((t, op) => applyOperation(op, t))
-        updateText(newText)
-        s = newText
-        newText
-      })
-      println(s"Updated -> $s")
+      try
+        var s = ""
+        editor.text.update(text => {
+          val newText = ops.foldLeft(text)((t, op) => applyOperation(op, t))
+          updateText(newText)
+          s = newText
+          newText
+        })
+        println(s"Updated -> $s")
+      catch case e: IndexOutOfBoundsException => {
+        println(s"Index exception ${e.toString()}")
+        wsClient.disconnect()
+        initWebSocket()
+      }
     }
   }
 
@@ -52,13 +58,13 @@ object Main {
         if (0 <= index && index <= doc.length) {
           doc.take(index) + str + doc.drop(index)
         } else {
-          throw IndexOutOfBoundsException("Insertion into an invalid position")
+          throw IndexOutOfBoundsException(s"Insertion into an invalid position $index")
         }
       case Delete(index, s) =>
         if (0 <= index && index < doc.length) {
           doc.take(index) + doc.drop(index + s.length)
         } else {
-          throw IndexOutOfBoundsException("Deletion from an invalid position")
+          throw IndexOutOfBoundsException(s"Deletion from an invalid position $index")
         }
       case null => doc
     }
@@ -84,8 +90,7 @@ object Main {
         (diff(0).asInstanceOf[Int], diff(1).asInstanceOf[String])
 
       if opType == 1 then ops = ops.appended(Insert(pos, text))
-      else if opType == -1 then
-        ops = ops.appended(Delete(pos, text))
+      else if opType == -1 then ops = ops.appended(Delete(pos, text))
 
       (pos + text.length, ops)
     }
